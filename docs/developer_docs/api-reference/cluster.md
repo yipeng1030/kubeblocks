@@ -2547,7 +2547,7 @@ OpsType
 <td>
 <p>Specifies the type of this operation. Supported types include &ldquo;Start&rdquo;, &ldquo;Stop&rdquo;, &ldquo;Restart&rdquo;, &ldquo;Switchover&rdquo;,
 &ldquo;VerticalScaling&rdquo;, &ldquo;HorizontalScaling&rdquo;, &ldquo;VolumeExpansion&rdquo;, &ldquo;Reconfiguring&rdquo;, &ldquo;Upgrade&rdquo;, &ldquo;Backup&rdquo;, &ldquo;Restore&rdquo;,
-&ldquo;Expose&rdquo;, &ldquo;DataScript&rdquo;, &ldquo;RebuildInstance&rdquo;, &ldquo;Custom&rdquo;.</p>
+&ldquo;Expose&rdquo;, &ldquo;RebuildInstance&rdquo;, &ldquo;Custom&rdquo;.</p>
 <p>Note: This field is immutable once set.</p>
 </td>
 </tr>
@@ -2831,7 +2831,7 @@ The modes can be <code>None</code>, <code>Readonly</code>, or <code>ReadWrite</c
 <h3 id="apps.kubeblocks.io/v1alpha1.Action">Action
 </h3>
 <p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ComponentSwitchover">ComponentSwitchover</a>, <a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">LifecycleActionHandler</a>, <a href="#apps.kubeblocks.io/v1alpha1.Probe">Probe</a>)
+(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ComponentLifecycleActions">ComponentLifecycleActions</a>, <a href="#apps.kubeblocks.io/v1alpha1.Probe">Probe</a>)
 </p>
 <div>
 <p>Action defines a customizable hook or procedure tailored for different database engines,
@@ -2859,8 +2859,6 @@ such as during planned maintenance or upgrades on the current leader node.</li>
 <p>Actions can be executed in different ways:</p>
 <ul>
 <li>ExecAction: Executes a command inside a container.
-which may run as a K8s job or be executed inside the Lorry sidecar container, depending on the implementation.
-Future implementations will standardize execution within Lorry.
 A set of predefined environment variables are available and can be leveraged within the <code>exec.command</code>
 to access context information such as details about pods, components, the overall cluster state,
 or database connection credentials.
@@ -3658,61 +3656,6 @@ RefNamespaceName
 <div>
 <p>BaseBackupType the base backup type, keep synchronized with the BaseBackupType of the data protection API.</p>
 </div>
-<h3 id="apps.kubeblocks.io/v1alpha1.BuiltinActionHandlerType">BuiltinActionHandlerType
-(<code>string</code> alias)</h3>
-<p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">LifecycleActionHandler</a>, <a href="#apps.kubeblocks.io/v1alpha1.Probe">Probe</a>)
-</p>
-<div>
-<p>BuiltinActionHandlerType defines build-in action handlers provided by Lorry, including:</p>
-<ul>
-<li><code>mysql</code></li>
-<li><code>wesql</code></li>
-<li><code>oceanbase</code></li>
-<li><code>redis</code></li>
-<li><code>mongodb</code></li>
-<li><code>etcd</code></li>
-<li><code>postgresql</code></li>
-<li><code>official-postgresql</code></li>
-<li><code>apecloud-postgresql</code></li>
-<li><code>polardbx</code></li>
-<li><code>custom</code></li>
-<li><code>unknown</code></li>
-</ul>
-</div>
-<table>
-<thead>
-<tr>
-<th>Value</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody><tr><td><p>&#34;apecloud-postgresql&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;custom&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;etcd&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;mongodb&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;mysql&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;oceanbase&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;official-postgresql&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;polardbx&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;postgresql&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;redis&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;unknown&#34;</p></td>
-<td></td>
-</tr><tr><td><p>&#34;wesql&#34;</p></td>
-<td></td>
-</tr></tbody>
-</table>
 <h3 id="apps.kubeblocks.io/v1alpha1.ClusterBackup">ClusterBackup
 </h3>
 <p>
@@ -5878,6 +5821,98 @@ separated by commas.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="apps.kubeblocks.io/v1alpha1.ClusterVarSelector">ClusterVarSelector
+</h3>
+<p>
+(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.VarSource">VarSource</a>)
+</p>
+<div>
+<p>ClusterVarSelector selects a var from a Cluster.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>ClusterVars</code><br/>
+<em>
+<a href="#apps.kubeblocks.io/v1alpha1.ClusterVars">
+ClusterVars
+</a>
+</em>
+</td>
+<td>
+<p>
+(Members of <code>ClusterVars</code> are embedded into this type.)
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="apps.kubeblocks.io/v1alpha1.ClusterVars">ClusterVars
+</h3>
+<p>
+(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ClusterVarSelector">ClusterVarSelector</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>namespace</code><br/>
+<em>
+<a href="#apps.kubeblocks.io/v1alpha1.VarOption">
+VarOption
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Reference to the namespace of the Cluster object.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>clusterName</code><br/>
+<em>
+<a href="#apps.kubeblocks.io/v1alpha1.VarOption">
+VarOption
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Reference to the name of the Cluster object.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>clusterUID</code><br/>
+<em>
+<a href="#apps.kubeblocks.io/v1alpha1.VarOption">
+VarOption
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Reference to the UID of the Cluster object.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="apps.kubeblocks.io/v1alpha1.CompletionProbe">CompletionProbe
 </h3>
 <p>
@@ -6807,8 +6842,8 @@ The <code>portName</code> is transformed by replacing &lsquo;-&rsquo; with &lsqu
 <td>
 <code>postProvision</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -6819,28 +6854,6 @@ LifecycleActionHandler
 at which the action should trigger: <code>Immediately</code>, <code>RuntimeReady</code>, <code>ComponentReady</code>, and <code>ClusterReady</code>.
 with <code>ComponentReady</code> being the default.</p>
 <p>The PostProvision Action is intended to run only once.</p>
-<p>The container executing this action has access to following environment variables:</p>
-<ul>
-<li><p>KB_CLUSTER_POD_IP_LIST: Comma-separated list of the cluster&rsquo;s pod IP addresses (e.g., &ldquo;podIp1,podIp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_POD_NAME_LIST: Comma-separated list of the cluster&rsquo;s pod names (e.g., &ldquo;pod1,pod2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_POD_HOST_NAME_LIST: Comma-separated list of host names, each corresponding to a pod in
-KB_CLUSTER_POD_NAME_LIST (e.g., &ldquo;hostName1,hostName2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_POD_HOST_IP_LIST: Comma-separated list of host IP addresses, each corresponding to a pod in
-KB_CLUSTER_POD_NAME_LIST (e.g., &ldquo;hostIp1,hostIp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_POD_NAME_LIST: Comma-separated list of all pod names within the component
-(e.g., &ldquo;pod1,pod2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_POD_IP_LIST: Comma-separated list of pod IP addresses,
-matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., &ldquo;podIp1,podIp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_POD_HOST_NAME_LIST: Comma-separated list of host names for each pod,
-matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., &ldquo;hostName1,hostName2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_POD_HOST_IP_LIST: Comma-separated list of host IP addresses for each pod,
-matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., &ldquo;hostIp1,hostIp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_LIST: Comma-separated list of all cluster components (e.g., &ldquo;comp1,comp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_DELETING_LIST: Comma-separated list of components that are currently being deleted
-(e.g., &ldquo;comp1,comp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_UNDELETED_LIST: Comma-separated list of components that are not being deleted
-(e.g., &ldquo;comp1,comp2&rdquo;).</p></li>
-</ul>
 <p>Note: This field is immutable once it has been set.</p>
 </td>
 </tr>
@@ -6848,8 +6861,8 @@ matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., &ldquo;h
 <td>
 <code>preTerminate</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -6860,33 +6873,6 @@ LifecycleActionHandler
 <p>This action is executed immediately when a scale-down operation for the Component is initiated.
 The actual termination and cleanup of the Component and its associated resources will not proceed
 until the PreTerminate action has completed successfully.</p>
-<p>The container executing this action has access to following environment variables:</p>
-<ul>
-<li><p>KB_CLUSTER_POD_IP_LIST: Comma-separated list of the cluster&rsquo;s pod IP addresses (e.g., &ldquo;podIp1,podIp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_POD_NAME_LIST: Comma-separated list of the cluster&rsquo;s pod names (e.g., &ldquo;pod1,pod2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_POD_HOST_NAME_LIST: Comma-separated list of host names, each corresponding to a pod in
-KB_CLUSTER_POD_NAME_LIST (e.g., &ldquo;hostName1,hostName2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_POD_HOST_IP_LIST: Comma-separated list of host IP addresses, each corresponding to a pod in
-KB_CLUSTER_POD_NAME_LIST (e.g., &ldquo;hostIp1,hostIp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_POD_NAME_LIST: Comma-separated list of all pod names within the component
-(e.g., &ldquo;pod1,pod2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_POD_IP_LIST: Comma-separated list of pod IP addresses,
-matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., &ldquo;podIp1,podIp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_POD_HOST_NAME_LIST: Comma-separated list of host names for each pod,
-matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., &ldquo;hostName1,hostName2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_POD_HOST_IP_LIST: Comma-separated list of host IP addresses for each pod,
-matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., &ldquo;hostIp1,hostIp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_LIST: Comma-separated list of all cluster components (e.g., &ldquo;comp1,comp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_DELETING_LIST: Comma-separated list of components that are currently being deleted
-(e.g., &ldquo;comp1,comp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_UNDELETED_LIST: Comma-separated list of components that are not being deleted
-(e.g., &ldquo;comp1,comp2&rdquo;).</p></li>
-<li><p>KB_CLUSTER_COMPONENT_IS_SCALING_IN: Indicates whether the component is currently scaling in.
-If this variable is present and set to &ldquo;true&rdquo;, it denotes that the component is undergoing a scale-in operation.
-During scale-in, data rebalancing is necessary to maintain cluster integrity.
-Contrast this with a cluster deletion scenario where data rebalancing is not required as the entire cluster
-is being cleaned up.</p></li>
-</ul>
 <p>Note: This field is immutable once it has been set.</p>
 </td>
 </tr>
@@ -6902,7 +6888,7 @@ Probe
 <td>
 <em>(Optional)</em>
 <p>Defines the procedure which is invoked regularly to assess the role of replicas.</p>
-<p>This action is periodically triggered by Lorry at the specified interval to determine the role of each replica.
+<p>This action is periodically triggered at the specified interval to determine the role of each replica.
 Upon successful execution, the action&rsquo;s output designates the role of the replica,
 which should match one of the predefined role names within <code>componentDefinition.spec.roles</code>.
 The output is then compared with the previous successful execution result.
@@ -6911,12 +6897,9 @@ which initiates an update of the replica&rsquo;s role.</p>
 <p>Defining a RoleProbe Action for a Component is required if roles are defined for the Component.
 It ensures replicas are correctly labeled with their respective roles.
 Without this, services that rely on roleSelectors might improperly direct traffic to wrong replicas.</p>
-<p>The container executing this action has access to following environment variables:</p>
+<p>The container executing this action has access to following variables:</p>
 <ul>
 <li>KB_POD_FQDN: The FQDN of the Pod whose role is being assessed.</li>
-<li>KB_SERVICE_PORT: The port used by the database service.</li>
-<li>KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.</li>
-<li>KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.</li>
 </ul>
 <p>Expected output of this action:
 - On Success: The determined role of the replica, which must align with one of the roles specified
@@ -6929,8 +6912,8 @@ Without this, services that rely on roleSelectors might improperly direct traffi
 <td>
 <code>switchover</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.ComponentSwitchover">
-ComponentSwitchover
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -6940,18 +6923,10 @@ ComponentSwitchover
 This approach aims to minimize downtime and maintain availability in systems with a leader-follower topology,
 during events such as planned maintenance or when performing stop, shutdown, restart, or upgrade operations
 involving the current leader node.</p>
-<p>The container executing this action has access to following environment variables:</p>
+<p>The container executing this action has access to following variables:</p>
 <ul>
 <li>KB_SWITCHOVER_CANDIDATE_NAME: The name of the pod for the new leader candidate, which may not be specified (empty).</li>
 <li>KB_SWITCHOVER_CANDIDATE_FQDN: The FQDN of the new leader candidate&rsquo;s pod, which may not be specified (empty).</li>
-<li>KB_LEADER_POD_IP: The IP address of the current leader&rsquo;s pod prior to the switchover.</li>
-<li>KB_LEADER_POD_NAME: The name of the current leader&rsquo;s pod prior to the switchover.</li>
-<li>KB_LEADER_POD_FQDN: The FQDN of the current leader&rsquo;s pod prior to the switchover.</li>
-</ul>
-<p>The environment variables with the following prefixes are deprecated and will be removed in future releases:</p>
-<ul>
-<li>KB_REPLICATION_PRIMARY<em>POD</em></li>
-<li>KB_CONSENSUS_LEADER<em>POD</em></li>
 </ul>
 <p>Note: This field is immutable once it has been set.</p>
 </td>
@@ -6960,8 +6935,8 @@ involving the current leader node.</p>
 <td>
 <code>memberJoin</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -6972,15 +6947,10 @@ LifecycleActionHandler
 <p>The role of the replica (e.g., primary, secondary) will be determined and assigned as part of the action command
 implementation, or automatically by the database kernel or a sidecar utility like Patroni that implements
 a consensus algorithm.</p>
-<p>The container executing this action has access to following environment variables:</p>
+<p>The container executing this action has access to following variables:</p>
 <ul>
-<li>KB_SERVICE_PORT: The port used by the database service.</li>
-<li>KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.</li>
-<li>KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.</li>
-<li>KB_PRIMARY_POD_FQDN: The FQDN of the primary Pod within the replication group.</li>
-<li>KB_MEMBER_ADDRESSES: A comma-separated list of Pod addresses for all replicas in the group.</li>
-<li>KB_NEW_MEMBER_POD_NAME: The pod name of the replica being added to the group.</li>
-<li>KB_NEW_MEMBER_POD_IP: The IP address of the replica being added to the group.</li>
+<li>KB_JOIN_MEMBER_POD_FQDN: The pod FQDN of the replica being added to the group.</li>
+<li>KB_JOIN_MEMBER_POD_NAME: The pod name of the replica being added to the group.</li>
 </ul>
 <p>Expected action output:
 - On Failure: An error message detailing the reason for any failure encountered
@@ -6990,11 +6960,8 @@ during the addition of the new member.</p>
 - bash
 - -c
 - |
-   ADDRESS=$(KB_MEMBER_ADDRESSES%%,*)
-   HOST=$(echo $ADDRESS | cut -d ':' -f 1)
-   PORT=$(echo $ADDRESS | cut -d ':' -f 2)
-   CLIENT=&quot;mysql -u $KB_SERVICE_USER -p$KB_SERVICE_PASSWORD -P $PORT -h $HOST -e&quot;
-	  $CLIENT &quot;ALTER SYSTEM ADD SERVER '$KB_NEW_MEMBER_POD_IP:$KB_SERVICE_PORT' ZONE 'zone1'&quot;
+   CLIENT=&quot;mysql -u $SERVICE_USER -p$SERVICE_PASSWORD -P $SERVICE_PORT -h $SERVICE_HOST -e&quot;
+	  $CLIENT &quot;ALTER SYSTEM ADD SERVER '$KB_POD_FQDN:$SERVICE_PORT' ZONE 'zone1'&quot;
 </code></pre>
 <p>Note: This field is immutable once it has been set.</p>
 </td>
@@ -7003,8 +6970,8 @@ during the addition of the new member.</p>
 <td>
 <code>memberLeave</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -7016,15 +6983,10 @@ The operator will wait for MemberLeave to complete successfully before releasing
 related Kubernetes resources.</p>
 <p>The process typically includes updating configurations and informing other group members about the removal.
 Data migration is generally not part of this action and should be handled separately if needed.</p>
-<p>The container executing this action has access to following environment variables:</p>
+<p>The container executing this action has access to following variables:</p>
 <ul>
-<li>KB_SERVICE_PORT: The port used by the database service.</li>
-<li>KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.</li>
-<li>KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.</li>
-<li>KB_PRIMARY_POD_FQDN: The FQDN of the primary Pod within the replication group.</li>
-<li>KB_MEMBER_ADDRESSES: A comma-separated list of Pod addresses for all replicas in the group.</li>
+<li>KB_LEAVE_MEMBER_POD_FQDN: The pod name of the replica being removed from the group.</li>
 <li>KB_LEAVE_MEMBER_POD_NAME: The pod name of the replica being removed from the group.</li>
-<li>KB_LEAVE_MEMBER_POD_IP: The IP address of the replica being removed from the group.</li>
 </ul>
 <p>Expected action output:
 - On Failure: An error message, if applicable, indicating why the action failed.</p>
@@ -7033,11 +6995,8 @@ Data migration is generally not part of this action and should be handled separa
 - bash
 - -c
 - |
-   ADDRESS=$(KB_MEMBER_ADDRESSES%%,*)
-   HOST=$(echo $ADDRESS | cut -d ':' -f 1)
-   PORT=$(echo $ADDRESS | cut -d ':' -f 2)
-   CLIENT=&quot;mysql -u $KB_SERVICE_USER  -p$KB_SERVICE_PASSWORD -P $PORT -h $HOST -e&quot;
-	  $CLIENT &quot;ALTER SYSTEM DELETE SERVER '$KB_LEAVE_MEMBER_POD_IP:$KB_SERVICE_PORT' ZONE 'zone1'&quot;
+   CLIENT=&quot;mysql -u $SERVICE_USER -p$SERVICE_PASSWORD -P $SERVICE_PORT -h $SERVICE_HOST -e&quot;
+	  $CLIENT &quot;ALTER SYSTEM DELETE SERVER '$KB_POD_FQDN:$SERVICE_PORT' ZONE 'zone1'&quot;
 </code></pre>
 <p>Note: This field is immutable once it has been set.</p>
 </td>
@@ -7046,8 +7005,8 @@ Data migration is generally not part of this action and should be handled separa
 <td>
 <code>readonly</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -7059,9 +7018,6 @@ This action is invoked when the database&rsquo;s volume capacity nears its upper
 <p>The container executing this action has access to following environment variables:</p>
 <ul>
 <li>KB_POD_FQDN: The FQDN of the replica pod whose role is being checked.</li>
-<li>KB_SERVICE_PORT: The port used by the database service.</li>
-<li>KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.</li>
-<li>KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.</li>
 </ul>
 <p>Expected action output:
 - On Failure: An error message, if applicable, indicating why the action failed.</p>
@@ -7072,8 +7028,8 @@ This action is invoked when the database&rsquo;s volume capacity nears its upper
 <td>
 <code>readwrite</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -7087,9 +7043,6 @@ both read and write operations.</p>
 <p>The container executing this action has access to following environment variables:</p>
 <ul>
 <li>KB_POD_FQDN: The FQDN of the replica pod whose role is being checked.</li>
-<li>KB_SERVICE_PORT: The port used by the database service.</li>
-<li>KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.</li>
-<li>KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.</li>
 </ul>
 <p>Expected action output:
 - On Failure: An error message, if applicable, indicating why the action failed.</p>
@@ -7100,8 +7053,8 @@ both read and write operations.</p>
 <td>
 <code>dataDump</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -7124,8 +7077,8 @@ that only the necessary data is exported for import into the new replica.</p>
 <td>
 <code>dataLoad</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -7147,8 +7100,8 @@ the action must be able to guarantee idempotence to allow for retries from the b
 <td>
 <code>reconfigure</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -7163,8 +7116,8 @@ LifecycleActionHandler
 <td>
 <code>accountProvision</code><br/>
 <em>
-<a href="#apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">
-LifecycleActionHandler
+<a href="#apps.kubeblocks.io/v1alpha1.Action">
+Action
 </a>
 </em>
 </td>
@@ -7174,6 +7127,11 @@ LifecycleActionHandler
 <p>Use Case:
 This action is designed to create system accounts that are utilized for replication, monitoring, backup,
 and other administrative tasks.</p>
+<p>The container executing this action has access to following variables:</p>
+<ul>
+<li>KB_ACCOUNT_NAME: The name of the system account to be created.</li>
+<li>KB_ACCOUNT_STATEMENT: The statement used to create the system account.</li>
+</ul>
 <p>Note: This field is immutable once it has been set.</p>
 </td>
 </tr>
@@ -7189,7 +7147,7 @@ and other administrative tasks.</p>
 <h3 id="apps.kubeblocks.io/v1alpha1.ComponentOps">ComponentOps
 </h3>
 <p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.CustomOpsComponent">CustomOpsComponent</a>, <a href="#apps.kubeblocks.io/v1alpha1.HorizontalScaling">HorizontalScaling</a>, <a href="#apps.kubeblocks.io/v1alpha1.RebuildInstance">RebuildInstance</a>, <a href="#apps.kubeblocks.io/v1alpha1.Reconfigure">Reconfigure</a>, <a href="#apps.kubeblocks.io/v1alpha1.ScriptSpec">ScriptSpec</a>, <a href="#apps.kubeblocks.io/v1alpha1.SpecificOpsRequest">SpecificOpsRequest</a>, <a href="#apps.kubeblocks.io/v1alpha1.Switchover">Switchover</a>, <a href="#apps.kubeblocks.io/v1alpha1.UpgradeComponent">UpgradeComponent</a>, <a href="#apps.kubeblocks.io/v1alpha1.VerticalScaling">VerticalScaling</a>, <a href="#apps.kubeblocks.io/v1alpha1.VolumeExpansion">VolumeExpansion</a>)
+(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.CustomOpsComponent">CustomOpsComponent</a>, <a href="#apps.kubeblocks.io/v1alpha1.HorizontalScaling">HorizontalScaling</a>, <a href="#apps.kubeblocks.io/v1alpha1.RebuildInstance">RebuildInstance</a>, <a href="#apps.kubeblocks.io/v1alpha1.Reconfigure">Reconfigure</a>, <a href="#apps.kubeblocks.io/v1alpha1.SpecificOpsRequest">SpecificOpsRequest</a>, <a href="#apps.kubeblocks.io/v1alpha1.Switchover">Switchover</a>, <a href="#apps.kubeblocks.io/v1alpha1.UpgradeComponent">UpgradeComponent</a>, <a href="#apps.kubeblocks.io/v1alpha1.VerticalScaling">VerticalScaling</a>, <a href="#apps.kubeblocks.io/v1alpha1.VolumeExpansion">VolumeExpansion</a>)
 </p>
 <div>
 <p>ComponentOps specifies the Component to be operated on.</p>
@@ -7869,71 +7827,6 @@ and <code>Name</code> is the specific name of the object.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="apps.kubeblocks.io/v1alpha1.ComponentSwitchover">ComponentSwitchover
-</h3>
-<p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ComponentLifecycleActions">ComponentLifecycleActions</a>)
-</p>
-<div>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>withCandidate</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.Action">
-Action
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Represents the switchover process for a specified candidate primary or leader instance.
-Note that only Action.Exec is currently supported, while Action.HTTP is not.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>withoutCandidate</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.Action">
-Action
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Represents a switchover process that does not involve a specific candidate primary or leader instance.
-As with the previous field, only Action.Exec is currently supported, not Action.HTTP.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>scriptSpecSelectors</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.ScriptSpecSelector">
-[]ScriptSpecSelector
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Used to define the selectors for the scriptSpecs that need to be referenced.
-If this field is set, the scripts defined under the &lsquo;scripts&rsquo; field can be invoked or referenced within an Action.</p>
-<p>This field is deprecated from v0.9.
-This field is maintained for backward compatibility and its use is discouraged.
-Existing usage should be updated to the current preferred approach to avoid compatibility issues in future releases.</p>
-</td>
-</tr>
-</tbody>
-</table>
 <h3 id="apps.kubeblocks.io/v1alpha1.ComponentSystemAccount">ComponentSystemAccount
 </h3>
 <p>
@@ -8175,7 +8068,7 @@ VarOption
 </tr>
 <tr>
 <td>
-<code>instanceNames</code><br/>
+<code>podNames</code><br/>
 <em>
 <a href="#apps.kubeblocks.io/v1alpha1.VarOption">
 VarOption
@@ -8184,8 +8077,8 @@ VarOption
 </td>
 <td>
 <em>(Optional)</em>
-<p>Reference to the instanceName list of the component.
-and the value will be presented in the following format: instanceName1,instanceName2,&hellip;</p>
+<p>Reference to the pod name list of the component.
+and the value will be presented in the following format: name1,name2,&hellip;</p>
 </td>
 </tr>
 <tr>
@@ -8200,6 +8093,36 @@ VarOption
 <td>
 <em>(Optional)</em>
 <p>Reference to the pod FQDN list of the component.
+The value will be presented in the following format: FQDN1,FQDN2,&hellip;</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>podNamesForRole</code><br/>
+<em>
+<a href="#apps.kubeblocks.io/v1alpha1.RoledVar">
+RoledVar
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Reference to the pod name list of the component that have a specific role.
+The value will be presented in the following format: name1,name2,&hellip;</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>podFQDNsForRole</code><br/>
+<em>
+<a href="#apps.kubeblocks.io/v1alpha1.RoledVar">
+RoledVar
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Reference to the pod FQDN list of the component that have a specific role.
 The value will be presented in the following format: FQDN1,FQDN2,&hellip;</p>
 </td>
 </tr>
@@ -10104,9 +10027,7 @@ This name can originate from an &lsquo;env&rsquo; entry or be a data key from an
 (<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.Action">Action</a>)
 </p>
 <div>
-<p>ExecAction describes an Action that executes a command inside a container.
-Which may run as a K8s job or be executed inside the Lorry sidecar container, depending on the implementation.
-Future implementations will standardize execution within Lorry.</p>
+<p>ExecAction describes an Action that executes a command inside a container.</p>
 </div>
 <table>
 <thead>
@@ -10127,7 +10048,23 @@ string
 <em>(Optional)</em>
 <p>Specifies the container image to be used for running the Action.</p>
 <p>When specified, a dedicated container will be created using this image to execute the Action.
-This field is mutually exclusive with the <code>container</code> field; only one of them should be provided.</p>
+All actions with same image will share the same container.</p>
+<p>This field cannot be updated.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>env</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#envvar-v1-core">
+[]Kubernetes core/v1.EnvVar
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Represents a list of environment variables that will be injected into the container.
+These variables enable the container to adapt its behavior based on the environment it&rsquo;s running in.</p>
 <p>This field cannot be updated.</p>
 </td>
 </tr>
@@ -10161,22 +10098,6 @@ If the shell is required, it must be explicitly invoked in the command.</p>
 </tr>
 <tr>
 <td>
-<code>env</code><br/>
-<em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#envvar-v1-core">
-[]Kubernetes core/v1.EnvVar
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Represents a list of environment variables that will be injected into the container.
-These variables enable the container to adapt its behavior based on the environment it&rsquo;s running in.</p>
-<p>This field cannot be updated.</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>targetPodSelector</code><br/>
 <em>
 <a href="#apps.kubeblocks.io/v1alpha1.TargetPodSelector">
@@ -10189,8 +10110,10 @@ TargetPodSelector
 <p>Defines the criteria used to select the target Pod(s) for executing the Action.
 This is useful when there is no default target replica identified.
 It allows for precise control over which Pod(s) the Action should run in.</p>
+<p>If not specified, the Action will be executed in the pod where the Action is triggered, such as the pod
+to be removed or added; or a random pod if the Action is triggered at the component level, such as
+post-provision or pre-terminate of the component.</p>
 <p>This field cannot be updated.</p>
-<p>Note: This field is reserved for future use and is not currently active.</p>
 </td>
 </tr>
 <tr>
@@ -10210,7 +10133,6 @@ The impact of this field depends on the <code>targetPodSelector</code> value:</p
 will be selected for the Action.</li>
 </ul>
 <p>This field cannot be updated.</p>
-<p>Note: This field is reserved for future use and is not currently active.</p>
 </td>
 </tr>
 <tr>
@@ -10222,12 +10144,14 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>Defines the name of the container within the target Pod where the action will be executed.</p>
-<p>This name must correspond to one of the containers defined in <code>componentDefinition.spec.runtime</code>.
-If this field is not specified, the default behavior is to use the first container listed in
-<code>componentDefinition.spec.runtime</code>.</p>
+<p>Specifies the name of the container within the same pod whose resources will be shared with the action.
+This allows the action to utilize the specified container&rsquo;s resources without executing within it.</p>
+<p>The name must match one of the containers defined in <code>componentDefinition.spec.runtime</code>.</p>
+<p>The resources that can be shared are included:</p>
+<ul>
+<li>volume mounts</li>
+</ul>
 <p>This field cannot be updated.</p>
-<p>Note: This field is reserved for future use and is not currently active.</p>
 </td>
 </tr>
 </tbody>
@@ -11346,91 +11270,6 @@ ConfigTemplateExtension
 </td>
 </tr></tbody>
 </table>
-<h3 id="apps.kubeblocks.io/v1alpha1.LifecycleActionHandler">LifecycleActionHandler
-</h3>
-<p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ComponentLifecycleActions">ComponentLifecycleActions</a>)
-</p>
-<div>
-<p>LifecycleActionHandler describes the implementation of a specific lifecycle action.</p>
-<p>Each action is deemed successful if it returns an exit code of 0 for command executions,
-or an HTTP 200 status for HTTP(s) actions.
-Any other exit code or HTTP status is considered an indication of failure.</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>builtinHandler</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.BuiltinActionHandlerType">
-BuiltinActionHandlerType
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Specifies the name of the predefined action handler to be invoked for lifecycle actions.</p>
-<p>Lorry, as a sidecar agent co-located with the database container in the same Pod,
-includes a suite of built-in action implementations that are tailored to different database engines.
-These are known as &ldquo;builtin&rdquo; handlers, includes: <code>mysql</code>, <code>redis</code>, <code>mongodb</code>, <code>etcd</code>,
-<code>postgresql</code>, <code>official-postgresql</code>, <code>apecloud-postgresql</code>, <code>wesql</code>, <code>oceanbase</code>, <code>polardbx</code>.</p>
-<p>If the <code>builtinHandler</code> field is specified, it instructs Lorry to utilize its internal built-in action handler
-to execute the specified lifecycle actions.</p>
-<p>The <code>builtinHandler</code> field is of type <code>BuiltinActionHandlerType</code>,
-which represents the name of the built-in handler.
-The <code>builtinHandler</code> specified within the same <code>ComponentLifecycleActions</code> should be consistent across all
-actions.
-This means that if you specify a built-in handler for one action, you should use the same handler
-for all other actions throughout the entire <code>ComponentLifecycleActions</code> collection.</p>
-<p>If you need to define lifecycle actions for database engines not covered by the existing built-in support,
-or when the pre-existing built-in handlers do not meet your specific needs,
-you can use the <code>customHandler</code> field to define your own action implementation.</p>
-<p>Deprecation Notice:</p>
-<ul>
-<li>In the future, the <code>builtinHandler</code> field will be deprecated in favor of using the <code>customHandler</code> field
-for configuring all lifecycle actions.</li>
-<li>Instead of using a name to indicate the built-in action implementations in Lorry,
-the recommended approach will be to explicitly invoke the desired action implementation through
-a gRPC interface exposed by the sidecar agent.</li>
-<li>Developers will have the flexibility to either use the built-in action implementations provided by Lorry
-or develop their own sidecar agent to implement custom actions and expose them via gRPC interfaces.</li>
-<li>This change will allow for greater customization and extensibility of lifecycle actions,
-as developers can create their own &ldquo;builtin&rdquo; implementations tailored to their specific requirements.</li>
-</ul>
-</td>
-</tr>
-<tr>
-<td>
-<code>customHandler</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.Action">
-Action
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Specifies a user-defined hook or procedure that is called to perform the specific lifecycle action.
-It offers a flexible and expandable approach for customizing the behavior of a Component by leveraging
-tailored actions.</p>
-<p>An Action can be implemented as either an ExecAction or an HTTPAction, with future versions planning
-to support GRPCAction,
-thereby accommodating unique logic for different database systems within the Action&rsquo;s framework.</p>
-<p>In future iterations, all built-in handlers are expected to transition to GRPCAction.
-This change means that Lorry or other sidecar agents will expose the implementation of actions
-through a GRPC interface for external invocation.
-Then the controller will interact with these actions via GRPCAction calls.</p>
-</td>
-</tr>
-</tbody>
-</table>
 <h3 id="apps.kubeblocks.io/v1alpha1.LogConfig">LogConfig
 </h3>
 <p>
@@ -12487,7 +12326,7 @@ OpsType
 <td>
 <p>Specifies the type of this operation. Supported types include &ldquo;Start&rdquo;, &ldquo;Stop&rdquo;, &ldquo;Restart&rdquo;, &ldquo;Switchover&rdquo;,
 &ldquo;VerticalScaling&rdquo;, &ldquo;HorizontalScaling&rdquo;, &ldquo;VolumeExpansion&rdquo;, &ldquo;Reconfiguring&rdquo;, &ldquo;Upgrade&rdquo;, &ldquo;Backup&rdquo;, &ldquo;Restore&rdquo;,
-&ldquo;Expose&rdquo;, &ldquo;DataScript&rdquo;, &ldquo;RebuildInstance&rdquo;, &ldquo;Custom&rdquo;.</p>
+&ldquo;Expose&rdquo;, &ldquo;RebuildInstance&rdquo;, &ldquo;Custom&rdquo;.</p>
 <p>Note: This field is immutable once set.</p>
 </td>
 </tr>
@@ -12740,7 +12579,7 @@ map[string]*github.com/apecloud/kubeblocks/apis/apps/v1alpha1.ReconfiguringStatu
 <p>Describes the detailed status of the OpsRequest.
 Possible condition types include &ldquo;Cancelled&rdquo;, &ldquo;WaitForProgressing&rdquo;, &ldquo;Validated&rdquo;, &ldquo;Succeed&rdquo;, &ldquo;Failed&rdquo;, &ldquo;Restarting&rdquo;,
 &ldquo;VerticalScaling&rdquo;, &ldquo;HorizontalScaling&rdquo;, &ldquo;VolumeExpanding&rdquo;, &ldquo;Reconfigure&rdquo;, &ldquo;Switchover&rdquo;, &ldquo;Stopping&rdquo;, &ldquo;Starting&rdquo;,
-&ldquo;VersionUpgrading&rdquo;, &ldquo;Exposing&rdquo;, &ldquo;ExecuteDataScript&rdquo;, &ldquo;Backup&rdquo;, &ldquo;InstancesRebuilding&rdquo;, &ldquo;CustomOperation&rdquo;.</p>
+&ldquo;VersionUpgrading&rdquo;, &ldquo;Exposing&rdquo;, &ldquo;Backup&rdquo;, &ldquo;InstancesRebuilding&rdquo;, &ldquo;CustomOperation&rdquo;.</p>
 </td>
 </tr>
 </tbody>
@@ -13040,13 +12879,10 @@ If the cluster is not configured for dual-stack, the Service creation fails.</li
 </tr>
 </thead>
 <tbody><tr><td><p>&#34;Backup&#34;</p></td>
-<td><p>DataScriptType the data script operation will execute the data script against the cluster.</p>
-</td>
+<td></td>
 </tr><tr><td><p>&#34;Custom&#34;</p></td>
 <td><p>RebuildInstance rebuilding an instance is very useful when a node is offline or an instance is unrecoverable.</p>
 </td>
-</tr><tr><td><p>&#34;DataScript&#34;</p></td>
-<td></td>
 </tr><tr><td><p>&#34;Expose&#34;</p></td>
 <td><p>StartType the start operation will start the pods which is deleted in stop operation.</p>
 </td>
@@ -14060,19 +13896,6 @@ Action
 </tr>
 <tr>
 <td>
-<code>builtinHandler</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.BuiltinActionHandlerType">
-BuiltinActionHandlerType
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-</td>
-</tr>
-<tr>
-<td>
 <code>initialDelaySeconds</code><br/>
 <em>
 int32
@@ -14292,49 +14115,6 @@ Kubernetes meta/v1.Time
 </tr><tr><td><p>&#34;https&#34;</p></td>
 <td></td>
 </tr></tbody>
-</table>
-<h3 id="apps.kubeblocks.io/v1alpha1.ProtectedVolume">ProtectedVolume
-</h3>
-<p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.VolumeProtectionSpec">VolumeProtectionSpec</a>)
-</p>
-<div>
-<p>ProtectedVolume is deprecated since v0.9, replaced with ComponentVolume.HighWatermark.</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>name</code><br/>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>The Name of the volume to protect.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>highWatermark</code><br/>
-<em>
-int
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Defines the high watermark threshold for the volume, it will override the component level threshold.
-If the value is invalid, it will be ignored and the component level threshold will be used.</p>
-</td>
-</tr>
-</tbody>
 </table>
 <h3 id="apps.kubeblocks.io/v1alpha1.ProvisionSecretRef">ProvisionSecretRef
 </h3>
@@ -15133,6 +14913,47 @@ This value is set to 0 by default, indicating that there will be no delay betwee
 </tr>
 </tbody>
 </table>
+<h3 id="apps.kubeblocks.io/v1alpha1.RoledVar">RoledVar
+</h3>
+<p>
+(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ComponentVars">ComponentVars</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>role</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>option</code><br/>
+<em>
+<a href="#apps.kubeblocks.io/v1alpha1.VarOption">
+VarOption
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="apps.kubeblocks.io/v1alpha1.Rule">Rule
 </h3>
 <p>
@@ -15466,254 +15287,6 @@ specified <code>key</code>, <code>value</code>, <code>effect</code>, and <code>o
 <p>TopologySpreadConstraints describes how a group of Pods ought to spread across topology
 domains. Scheduler will schedule Pods in a way which abides by the constraints.
 All topologySpreadConstraints are ANDed.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="apps.kubeblocks.io/v1alpha1.ScriptFrom">ScriptFrom
-</h3>
-<p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ScriptSpec">ScriptSpec</a>)
-</p>
-<div>
-<p>ScriptFrom specifies the source of the script to be executed, which can be either a ConfigMap or a Secret.</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>configMapRef</code><br/>
-<em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#configmapkeyselector-v1-core">
-[]Kubernetes core/v1.ConfigMapKeySelector
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>A list of ConfigMapKeySelector objects, each specifies a ConfigMap and a key containing the script.</p>
-<p>Note: This field cannot be modified once set.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>secretRef</code><br/>
-<em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#secretkeyselector-v1-core">
-[]Kubernetes core/v1.SecretKeySelector
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>A list of SecretKeySelector objects, each specifies a Secret and a key containing the script.</p>
-<p>Note: This field cannot be modified once set.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="apps.kubeblocks.io/v1alpha1.ScriptSecret">ScriptSecret
-</h3>
-<p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ScriptSpec">ScriptSpec</a>)
-</p>
-<div>
-<p>ScriptSecret represents the secret that is used to execute the script.</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>name</code><br/>
-<em>
-string
-</em>
-</td>
-<td>
-<p>Specifies the name of the secret.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>usernameKey</code><br/>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Used to specify the username part of the secret.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>passwordKey</code><br/>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Used to specify the password part of the secret.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="apps.kubeblocks.io/v1alpha1.ScriptSpec">ScriptSpec
-</h3>
-<p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.SpecificOpsRequest">SpecificOpsRequest</a>)
-</p>
-<div>
-<p>ScriptSpec is a legacy feature for executing engine-specific operations such as creating databases or users.
-It supports limited engines including MySQL, PostgreSQL, Redis, MongoDB.</p>
-<p>ScriptSpec has been replaced by the more versatile OpsDefinition.
-It is recommended to use OpsDefinition instead. ScriptSpec is deprecated and will be removed in a future version.</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>ComponentOps</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.ComponentOps">
-ComponentOps
-</a>
-</em>
-</td>
-<td>
-<p>
-(Members of <code>ComponentOps</code> are embedded into this type.)
-</p>
-<p>Specifies the name of the Component.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>image</code><br/>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Specifies the image to be used to execute scripts.</p>
-<p>By default, the image &ldquo;apecloud/kubeblocks-datascript:latest&rdquo; is used.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>secret</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.ScriptSecret">
-ScriptSecret
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Defines the secret to be used to execute the script. If not specified, the default cluster root credential secret is used.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>script</code><br/>
-<em>
-[]string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Defines the content of scripts to be executed.</p>
-<p>All scripts specified in this field will be executed in the order they are provided.</p>
-<p>Note: this field cannot be modified once set.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>scriptFrom</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.ScriptFrom">
-ScriptFrom
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Specifies the sources of the scripts to be executed.
-Each script can be imported either from a ConfigMap or a Secret.</p>
-<p>All scripts obtained from the sources specified in this field will be executed after
-any scripts provided in the <code>script</code> field.</p>
-<p>Execution order:
-1. Scripts provided in the <code>script</code> field, in the order of the scripts listed.
-2. Scripts imported from ConfigMaps, in the order of the sources listed.
-3. Scripts imported from Secrets, in the order of the sources listed.</p>
-<p>Note: this field cannot be modified once set.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>selector</code><br/>
-<em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#labelselector-v1-meta">
-Kubernetes meta/v1.LabelSelector
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Specifies the labels used to select the Pods on which the script should be executed.</p>
-<p>By default, the script is executed on the Pod associated with the service named &ldquo;&#123;clusterName&#125;-&#123;componentName&#125;&rdquo;,
-which typically routes to the Pod with the primary/leader role.</p>
-<p>However, some Components, such as Redis, do not synchronize account information between primary and secondary Pods.
-In these cases, the script must be executed on all replica Pods matching the selector.</p>
-<p>Note: this field cannot be modified once set.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="apps.kubeblocks.io/v1alpha1.ScriptSpecSelector">ScriptSpecSelector
-</h3>
-<p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ComponentSwitchover">ComponentSwitchover</a>)
-</p>
-<div>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>name</code><br/>
-<em>
-string
-</em>
-</td>
-<td>
-<p>Represents the name of the ScriptSpec referent.</p>
 </td>
 </tr>
 </tbody>
@@ -16986,6 +16559,20 @@ ServiceVars
 <tbody>
 <tr>
 <td>
+<code>serviceType</code><br/>
+<em>
+<a href="#apps.kubeblocks.io/v1alpha1.VarOption">
+VarOption
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ServiceType references the type of the service.</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>host</code><br/>
 <em>
 <a href="#apps.kubeblocks.io/v1alpha1.VarOption">
@@ -17256,24 +16843,6 @@ Reconfigure
 <td>
 <em>(Optional)</em>
 <p>Lists Expose objects, each specifying a Component and its services to be exposed.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>scriptSpec</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.ScriptSpec">
-ScriptSpec
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Specifies the image and scripts for executing engine-specific operations such as creating databases or users.
-It supports limited engines including MySQL, PostgreSQL, Redis, MongoDB.</p>
-<p>ScriptSpec has been replaced by the more versatile OpsDefinition.
-It is recommended to use OpsDefinition instead.
-ScriptSpec is deprecated and will be removed in a future version.</p>
 </td>
 </tr>
 <tr>
@@ -18271,7 +17840,7 @@ string
 <h3 id="apps.kubeblocks.io/v1alpha1.VarOption">VarOption
 (<code>string</code> alias)</h3>
 <p>
-(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ComponentVars">ComponentVars</a>, <a href="#apps.kubeblocks.io/v1alpha1.CredentialVars">CredentialVars</a>, <a href="#apps.kubeblocks.io/v1alpha1.NamedVar">NamedVar</a>, <a href="#apps.kubeblocks.io/v1alpha1.ServiceRefVars">ServiceRefVars</a>, <a href="#apps.kubeblocks.io/v1alpha1.ServiceVars">ServiceVars</a>)
+(<em>Appears on:</em><a href="#apps.kubeblocks.io/v1alpha1.ClusterVars">ClusterVars</a>, <a href="#apps.kubeblocks.io/v1alpha1.ComponentVars">ComponentVars</a>, <a href="#apps.kubeblocks.io/v1alpha1.CredentialVars">CredentialVars</a>, <a href="#apps.kubeblocks.io/v1alpha1.NamedVar">NamedVar</a>, <a href="#apps.kubeblocks.io/v1alpha1.RoledVar">RoledVar</a>, <a href="#apps.kubeblocks.io/v1alpha1.ServiceRefVars">ServiceRefVars</a>, <a href="#apps.kubeblocks.io/v1alpha1.ServiceVars">ServiceVars</a>)
 </p>
 <div>
 <p>VarOption defines whether a variable is required or optional.</p>
@@ -18388,6 +17957,20 @@ ComponentVarSelector
 <td>
 <em>(Optional)</em>
 <p>Selects a defined var of a Component.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>clusterVarRef</code><br/>
+<em>
+<a href="#apps.kubeblocks.io/v1alpha1.ClusterVarSelector">
+ClusterVarSelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Selects a defined var of a Cluster.</p>
 </td>
 </tr>
 </tbody>
@@ -18515,51 +18098,6 @@ that are used to expand the storage and the desired storage size for each one.</
 <td>
 <em>(Optional)</em>
 <p>Specifies the desired storage size of the instance template that need to volume expand.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="apps.kubeblocks.io/v1alpha1.VolumeProtectionSpec">VolumeProtectionSpec
-</h3>
-<div>
-<p>VolumeProtectionSpec is deprecated since v0.9, replaced with ComponentVolume.HighWatermark.</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>highWatermark</code><br/>
-<em>
-int
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>The high watermark threshold for volume space usage.
-If there is any specified volumes who&rsquo;s space usage is over the threshold, the pre-defined &ldquo;LOCK&rdquo; action
-will be triggered to degrade the service to protect volume from space exhaustion, such as to set the instance
-as read-only. And after that, if all volumes&rsquo; space usage drops under the threshold later, the pre-defined
-&ldquo;UNLOCK&rdquo; action will be performed to recover the service normally.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>volumes</code><br/>
-<em>
-<a href="#apps.kubeblocks.io/v1alpha1.ProtectedVolume">
-[]ProtectedVolume
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>The Volumes to be protected.</p>
 </td>
 </tr>
 </tbody>
@@ -21856,20 +21394,6 @@ bool
 <tbody>
 <tr>
 <td>
-<code>builtinHandlerName</code><br/>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>Specifies the builtin handler name to use to probe the role of the main container.
-Available handlers include: mysql, postgres, mongodb, redis, etcd, kafka.
-Use CustomHandler to define a custom role probe function if none of the built-in handlers meet the requirement.</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>customHandler</code><br/>
 <em>
 <a href="#workloads.kubeblocks.io/v1alpha1.Action">
@@ -21880,7 +21404,6 @@ Use CustomHandler to define a custom role probe function if none of the built-in
 <td>
 <em>(Optional)</em>
 <p>Defines a custom method for role probing.
-If the BuiltinHandler meets the requirement, use it instead.
 Actions defined here are executed in series.
 Upon completion of all actions, the final output should be a single string representing the role name defined in spec.Roles.
 The latest <a href="https://busybox.net/">BusyBox</a> image will be used if Image is not configured.

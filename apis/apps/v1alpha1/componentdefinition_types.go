@@ -697,33 +697,16 @@ const (
 )
 
 // ExecAction describes an Action that executes a command inside a container.
-// Which may run as a K8s job or be executed inside the Lorry sidecar container, depending on the implementation.
-// Future implementations will standardize execution within Lorry.
 type ExecAction struct {
 	// Specifies the container image to be used for running the Action.
 	//
 	// When specified, a dedicated container will be created using this image to execute the Action.
-	// This field is mutually exclusive with the `container` field; only one of them should be provided.
+	// All actions with same image will share the same container.
 	//
 	// This field cannot be updated.
 	//
 	// +optional
 	Image string `json:"image,omitempty"`
-
-	// Specifies the command to be executed inside the container.
-	// The working directory for this command is the container's root directory('/').
-	// Commands are executed directly without a shell environment, meaning shell-specific syntax ('|', etc.) is not supported.
-	// If the shell is required, it must be explicitly invoked in the command.
-	//
-	// A successful execution is indicated by an exit status of 0; any non-zero status signifies a failure.
-	//
-	// +optional
-	Command []string `json:"command,omitempty" protobuf:"bytes,1,rep,name=command"`
-
-	// Args represents the arguments that are passed to the `command` for execution.
-	//
-	// +optional
-	Args []string `json:"args,omitempty"`
 
 	// Represents a list of environment variables that will be injected into the container.
 	// These variables enable the container to adapt its behavior based on the environment it's running in.
@@ -735,13 +718,30 @@ type ExecAction struct {
 	// +patchStrategy=merge
 	Env []corev1.EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
+	// Specifies the command to be executed inside the container.
+	// The working directory for this command is the container's root directory('/').
+	// Commands are executed directly without a shell environment, meaning shell-specific syntax ('|', etc.) is not supported.
+	// If the shell is required, it must be explicitly invoked in the command.
+	//
+	// A successful execution is indicated by an exit status of 0; any non-zero status signifies a failure.
+	//
+	// +optional
+	Command []string `json:"command,omitempty"`
+
+	// Args represents the arguments that are passed to the `command` for execution.
+	//
+	// +optional
+	Args []string `json:"args,omitempty"`
+
 	// Defines the criteria used to select the target Pod(s) for executing the Action.
 	// This is useful when there is no default target replica identified.
 	// It allows for precise control over which Pod(s) the Action should run in.
 	//
-	// This field cannot be updated.
+	// If not specified, the Action will be executed in the pod where the Action is triggered, such as the pod
+	// to be removed or added; or a random pod if the Action is triggered at the component level, such as
+	// post-provision or pre-terminate of the component.
 	//
-	// Note: This field is reserved for future use and is not currently active.
+	// This field cannot be updated.
 	//
 	// +optional
 	TargetPodSelector TargetPodSelector `json:"targetPodSelector,omitempty"`
@@ -755,20 +755,19 @@ type ExecAction struct {
 	//
 	// This field cannot be updated.
 	//
-	// Note: This field is reserved for future use and is not currently active.
-	//
 	// +optional
 	MatchingKey string `json:"matchingKey,omitempty"`
 
-	// Defines the name of the container within the target Pod where the action will be executed.
+	// Specifies the name of the container within the same pod whose resources will be shared with the action.
+	// This allows the action to utilize the specified container's resources without executing within it.
 	//
-	// This name must correspond to one of the containers defined in `componentDefinition.spec.runtime`.
-	// If this field is not specified, the default behavior is to use the first container listed in
-	// `componentDefinition.spec.runtime`.
+	// The name must match one of the containers defined in `componentDefinition.spec.runtime`.
+	//
+	// The resources that can be shared are included:
+	//
+	// - volume mounts
 	//
 	// This field cannot be updated.
-	//
-	// Note: This field is reserved for future use and is not currently active.
 	//
 	// +optional
 	Container string `json:"container,omitempty"`
@@ -826,8 +825,6 @@ const (
 // Actions can be executed in different ways:
 //
 //   - ExecAction: Executes a command inside a container.
-//     which may run as a K8s job or be executed inside the Lorry sidecar container, depending on the implementation.
-//     Future implementations will standardize execution within Lorry.
 //     A set of predefined environment variables are available and can be leveraged within the `exec.command`
 //     to access context information such as details about pods, components, the overall cluster state,
 //     or database connection credentials.
@@ -898,11 +895,6 @@ type Action struct {
 type Probe struct {
 	Action `json:",inline"`
 
-	// TODO: remove this later.
-	//
-	// +optional
-	BuiltinHandler *BuiltinActionHandlerType `json:"builtinHandler,omitempty"`
-
 	// Specifies the number of seconds to wait after the container has started before the RoleProbe
 	// begins to detect the container's role.
 	//
@@ -928,96 +920,6 @@ type Probe struct {
 	FailureThreshold int32 `json:"failureThreshold,omitempty"`
 }
 
-// BuiltinActionHandlerType defines build-in action handlers provided by Lorry, including:
-//
-// - `mysql`
-// - `wesql`
-// - `oceanbase`
-// - `redis`
-// - `mongodb`
-// - `etcd`
-// - `postgresql`
-// - `official-postgresql`
-// - `apecloud-postgresql`
-// - `polardbx`
-// - `custom`
-// - `unknown`
-type BuiltinActionHandlerType string
-
-const (
-	MySQLBuiltinActionHandler              BuiltinActionHandlerType = "mysql"
-	WeSQLBuiltinActionHandler              BuiltinActionHandlerType = "wesql"
-	OceanbaseBuiltinActionHandler          BuiltinActionHandlerType = "oceanbase"
-	RedisBuiltinActionHandler              BuiltinActionHandlerType = "redis"
-	MongoDBBuiltinActionHandler            BuiltinActionHandlerType = "mongodb"
-	ETCDBuiltinActionHandler               BuiltinActionHandlerType = "etcd"
-	PostgresqlBuiltinActionHandler         BuiltinActionHandlerType = "postgresql"
-	OfficialPostgresqlBuiltinActionHandler BuiltinActionHandlerType = "official-postgresql"
-	ApeCloudPostgresqlBuiltinActionHandler BuiltinActionHandlerType = "apecloud-postgresql"
-	PolarDBXBuiltinActionHandler           BuiltinActionHandlerType = "polardbx"
-	CustomActionHandler                    BuiltinActionHandlerType = "custom"
-	UnknownBuiltinActionHandler            BuiltinActionHandlerType = "unknown"
-)
-
-// LifecycleActionHandler describes the implementation of a specific lifecycle action.
-//
-// Each action is deemed successful if it returns an exit code of 0 for command executions,
-// or an HTTP 200 status for HTTP(s) actions.
-// Any other exit code or HTTP status is considered an indication of failure.
-type LifecycleActionHandler struct {
-	// Specifies the name of the predefined action handler to be invoked for lifecycle actions.
-	//
-	// Lorry, as a sidecar agent co-located with the database container in the same Pod,
-	// includes a suite of built-in action implementations that are tailored to different database engines.
-	// These are known as "builtin" handlers, includes: `mysql`, `redis`, `mongodb`, `etcd`,
-	// `postgresql`, `official-postgresql`, `apecloud-postgresql`, `wesql`, `oceanbase`, `polardbx`.
-	//
-	// If the `builtinHandler` field is specified, it instructs Lorry to utilize its internal built-in action handler
-	// to execute the specified lifecycle actions.
-	//
-	// The `builtinHandler` field is of type `BuiltinActionHandlerType`,
-	// which represents the name of the built-in handler.
-	// The `builtinHandler` specified within the same `ComponentLifecycleActions` should be consistent across all
-	// actions.
-	// This means that if you specify a built-in handler for one action, you should use the same handler
-	// for all other actions throughout the entire `ComponentLifecycleActions` collection.
-	//
-	// If you need to define lifecycle actions for database engines not covered by the existing built-in support,
-	// or when the pre-existing built-in handlers do not meet your specific needs,
-	// you can use the `customHandler` field to define your own action implementation.
-	//
-	// Deprecation Notice:
-	//
-	// - In the future, the `builtinHandler` field will be deprecated in favor of using the `customHandler` field
-	//   for configuring all lifecycle actions.
-	// - Instead of using a name to indicate the built-in action implementations in Lorry,
-	//   the recommended approach will be to explicitly invoke the desired action implementation through
-	//   a gRPC interface exposed by the sidecar agent.
-	// - Developers will have the flexibility to either use the built-in action implementations provided by Lorry
-	//   or develop their own sidecar agent to implement custom actions and expose them via gRPC interfaces.
-	// - This change will allow for greater customization and extensibility of lifecycle actions,
-	//   as developers can create their own "builtin" implementations tailored to their specific requirements.
-	//
-	// +optional
-	BuiltinHandler *BuiltinActionHandlerType `json:"builtinHandler,omitempty"`
-
-	// Specifies a user-defined hook or procedure that is called to perform the specific lifecycle action.
-	// It offers a flexible and expandable approach for customizing the behavior of a Component by leveraging
-	// tailored actions.
-	//
-	// An Action can be implemented as either an ExecAction or an HTTPAction, with future versions planning
-	// to support GRPCAction,
-	// thereby accommodating unique logic for different database systems within the Action's framework.
-	//
-	// In future iterations, all built-in handlers are expected to transition to GRPCAction.
-	// This change means that Lorry or other sidecar agents will expose the implementation of actions
-	// through a GRPC interface for external invocation.
-	// Then the controller will interact with these actions via GRPCAction calls.
-	//
-	// +optional
-	CustomHandler *Action `json:"customHandler,omitempty"`
-}
-
 // ComponentLifecycleActions defines a collection of Actions for customizing the behavior of a Component.
 type ComponentLifecycleActions struct {
 	// Specifies the hook to be executed after a component's creation.
@@ -1028,34 +930,10 @@ type ComponentLifecycleActions struct {
 	//
 	// The PostProvision Action is intended to run only once.
 	//
-	// The container executing this action has access to following environment variables:
-	//
-	// - KB_CLUSTER_POD_IP_LIST: Comma-separated list of the cluster's pod IP addresses (e.g., "podIp1,podIp2").
-	// - KB_CLUSTER_POD_NAME_LIST: Comma-separated list of the cluster's pod names (e.g., "pod1,pod2").
-	// - KB_CLUSTER_POD_HOST_NAME_LIST: Comma-separated list of host names, each corresponding to a pod in
-	//   KB_CLUSTER_POD_NAME_LIST (e.g., "hostName1,hostName2").
-	// - KB_CLUSTER_POD_HOST_IP_LIST: Comma-separated list of host IP addresses, each corresponding to a pod in
-	//   KB_CLUSTER_POD_NAME_LIST (e.g., "hostIp1,hostIp2").
-	//
-	// - KB_CLUSTER_COMPONENT_POD_NAME_LIST: Comma-separated list of all pod names within the component
-	//   (e.g., "pod1,pod2").
-	// - KB_CLUSTER_COMPONENT_POD_IP_LIST: Comma-separated list of pod IP addresses,
-	//   matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., "podIp1,podIp2").
-	// - KB_CLUSTER_COMPONENT_POD_HOST_NAME_LIST: Comma-separated list of host names for each pod,
-	//   matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., "hostName1,hostName2").
-	// - KB_CLUSTER_COMPONENT_POD_HOST_IP_LIST: Comma-separated list of host IP addresses for each pod,
-	//   matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., "hostIp1,hostIp2").
-	//
-	// - KB_CLUSTER_COMPONENT_LIST: Comma-separated list of all cluster components (e.g., "comp1,comp2").
-	// - KB_CLUSTER_COMPONENT_DELETING_LIST: Comma-separated list of components that are currently being deleted
-	//   (e.g., "comp1,comp2").
-	// - KB_CLUSTER_COMPONENT_UNDELETED_LIST: Comma-separated list of components that are not being deleted
-	//   (e.g., "comp1,comp2").
-	//
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	PostProvision *LifecycleActionHandler `json:"postProvision,omitempty"`
+	PostProvision *Action `json:"postProvision,omitempty"`
 
 	// Specifies the hook to be executed prior to terminating a component.
 	//
@@ -1065,44 +943,14 @@ type ComponentLifecycleActions struct {
 	// The actual termination and cleanup of the Component and its associated resources will not proceed
 	// until the PreTerminate action has completed successfully.
 	//
-	// The container executing this action has access to following environment variables:
-	//
-	// - KB_CLUSTER_POD_IP_LIST: Comma-separated list of the cluster's pod IP addresses (e.g., "podIp1,podIp2").
-	// - KB_CLUSTER_POD_NAME_LIST: Comma-separated list of the cluster's pod names (e.g., "pod1,pod2").
-	// - KB_CLUSTER_POD_HOST_NAME_LIST: Comma-separated list of host names, each corresponding to a pod in
-	//   KB_CLUSTER_POD_NAME_LIST (e.g., "hostName1,hostName2").
-	// - KB_CLUSTER_POD_HOST_IP_LIST: Comma-separated list of host IP addresses, each corresponding to a pod in
-	//   KB_CLUSTER_POD_NAME_LIST (e.g., "hostIp1,hostIp2").
-	//
-	// - KB_CLUSTER_COMPONENT_POD_NAME_LIST: Comma-separated list of all pod names within the component
-	//   (e.g., "pod1,pod2").
-	// - KB_CLUSTER_COMPONENT_POD_IP_LIST: Comma-separated list of pod IP addresses,
-	//   matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., "podIp1,podIp2").
-	// - KB_CLUSTER_COMPONENT_POD_HOST_NAME_LIST: Comma-separated list of host names for each pod,
-	//   matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., "hostName1,hostName2").
-	// - KB_CLUSTER_COMPONENT_POD_HOST_IP_LIST: Comma-separated list of host IP addresses for each pod,
-	//   matching the order of pods in KB_CLUSTER_COMPONENT_POD_NAME_LIST (e.g., "hostIp1,hostIp2").
-	//
-	// - KB_CLUSTER_COMPONENT_LIST: Comma-separated list of all cluster components (e.g., "comp1,comp2").
-	// - KB_CLUSTER_COMPONENT_DELETING_LIST: Comma-separated list of components that are currently being deleted
-	//   (e.g., "comp1,comp2").
-	// - KB_CLUSTER_COMPONENT_UNDELETED_LIST: Comma-separated list of components that are not being deleted
-	//   (e.g., "comp1,comp2").
-	//
-	// - KB_CLUSTER_COMPONENT_IS_SCALING_IN: Indicates whether the component is currently scaling in.
-	//   If this variable is present and set to "true", it denotes that the component is undergoing a scale-in operation.
-	//   During scale-in, data rebalancing is necessary to maintain cluster integrity.
-	//   Contrast this with a cluster deletion scenario where data rebalancing is not required as the entire cluster
-	//   is being cleaned up.
-	//
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	PreTerminate *LifecycleActionHandler `json:"preTerminate,omitempty"`
+	PreTerminate *Action `json:"preTerminate,omitempty"`
 
 	// Defines the procedure which is invoked regularly to assess the role of replicas.
 	//
-	// This action is periodically triggered by Lorry at the specified interval to determine the role of each replica.
+	// This action is periodically triggered at the specified interval to determine the role of each replica.
 	// Upon successful execution, the action's output designates the role of the replica,
 	// which should match one of the predefined role names within `componentDefinition.spec.roles`.
 	// The output is then compared with the previous successful execution result.
@@ -1113,12 +961,9 @@ type ComponentLifecycleActions struct {
 	// It ensures replicas are correctly labeled with their respective roles.
 	// Without this, services that rely on roleSelectors might improperly direct traffic to wrong replicas.
 	//
-	// The container executing this action has access to following environment variables:
+	// The container executing this action has access to following variables:
 	//
 	// - KB_POD_FQDN: The FQDN of the Pod whose role is being assessed.
-	// - KB_SERVICE_PORT: The port used by the database service.
-	// - KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.
-	// - KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.
 	//
 	// Expected output of this action:
 	// - On Success: The determined role of the replica, which must align with one of the roles specified
@@ -1135,23 +980,15 @@ type ComponentLifecycleActions struct {
 	// during events such as planned maintenance or when performing stop, shutdown, restart, or upgrade operations
 	// involving the current leader node.
 	//
-	// The container executing this action has access to following environment variables:
+	// The container executing this action has access to following variables:
 	//
 	// - KB_SWITCHOVER_CANDIDATE_NAME: The name of the pod for the new leader candidate, which may not be specified (empty).
 	// - KB_SWITCHOVER_CANDIDATE_FQDN: The FQDN of the new leader candidate's pod, which may not be specified (empty).
-	// - KB_LEADER_POD_IP: The IP address of the current leader's pod prior to the switchover.
-	// - KB_LEADER_POD_NAME: The name of the current leader's pod prior to the switchover.
-	// - KB_LEADER_POD_FQDN: The FQDN of the current leader's pod prior to the switchover.
-	//
-	// The environment variables with the following prefixes are deprecated and will be removed in future releases:
-	//
-	// - KB_REPLICATION_PRIMARY_POD_
-	// - KB_CONSENSUS_LEADER_POD_
 	//
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	Switchover *ComponentSwitchover `json:"switchover,omitempty"`
+	Switchover *Action `json:"switchover,omitempty"`
 
 	// Defines the procedure to add a new replica to the replication group.
 	//
@@ -1161,15 +998,10 @@ type ComponentLifecycleActions struct {
 	// implementation, or automatically by the database kernel or a sidecar utility like Patroni that implements
 	// a consensus algorithm.
 	//
-	// The container executing this action has access to following environment variables:
+	// The container executing this action has access to following variables:
 	//
-	// - KB_SERVICE_PORT: The port used by the database service.
-	// - KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.
-	// - KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.
-	// - KB_PRIMARY_POD_FQDN: The FQDN of the primary Pod within the replication group.
-	// - KB_MEMBER_ADDRESSES: A comma-separated list of Pod addresses for all replicas in the group.
-	// - KB_NEW_MEMBER_POD_NAME: The pod name of the replica being added to the group.
-	// - KB_NEW_MEMBER_POD_IP: The IP address of the replica being added to the group.
+	// - KB_JOIN_MEMBER_POD_FQDN: The pod FQDN of the replica being added to the group.
+	// - KB_JOIN_MEMBER_POD_NAME: The pod name of the replica being added to the group.
 	//
 	// Expected action output:
 	// - On Failure: An error message detailing the reason for any failure encountered
@@ -1182,17 +1014,14 @@ type ComponentLifecycleActions struct {
 	// - bash
 	// - -c
 	// - |
-	//    ADDRESS=$(KB_MEMBER_ADDRESSES%%,*)
-	//    HOST=$(echo $ADDRESS | cut -d ':' -f 1)
-	//    PORT=$(echo $ADDRESS | cut -d ':' -f 2)
-	//    CLIENT="mysql -u $KB_SERVICE_USER -p$KB_SERVICE_PASSWORD -P $PORT -h $HOST -e"
-	// 	  $CLIENT "ALTER SYSTEM ADD SERVER '$KB_NEW_MEMBER_POD_IP:$KB_SERVICE_PORT' ZONE 'zone1'"
+	//    CLIENT="mysql -u $SERVICE_USER -p$SERVICE_PASSWORD -P $SERVICE_PORT -h $SERVICE_HOST -e"
+	// 	  $CLIENT "ALTER SYSTEM ADD SERVER '$KB_POD_FQDN:$SERVICE_PORT' ZONE 'zone1'"
 	// ```
 	//
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	MemberJoin *LifecycleActionHandler `json:"memberJoin,omitempty"`
+	MemberJoin *Action `json:"memberJoin,omitempty"`
 
 	// Defines the procedure to remove a replica from the replication group.
 	//
@@ -1203,15 +1032,10 @@ type ComponentLifecycleActions struct {
 	// The process typically includes updating configurations and informing other group members about the removal.
 	// Data migration is generally not part of this action and should be handled separately if needed.
 	//
-	// The container executing this action has access to following environment variables:
+	// The container executing this action has access to following variables:
 	//
-	// - KB_SERVICE_PORT: The port used by the database service.
-	// - KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.
-	// - KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.
-	// - KB_PRIMARY_POD_FQDN: The FQDN of the primary Pod within the replication group.
-	// - KB_MEMBER_ADDRESSES: A comma-separated list of Pod addresses for all replicas in the group.
+	// - KB_LEAVE_MEMBER_POD_FQDN: The pod name of the replica being removed from the group.
 	// - KB_LEAVE_MEMBER_POD_NAME: The pod name of the replica being removed from the group.
-	// - KB_LEAVE_MEMBER_POD_IP: The IP address of the replica being removed from the group.
 	//
 	// Expected action output:
 	// - On Failure: An error message, if applicable, indicating why the action failed.
@@ -1223,17 +1047,14 @@ type ComponentLifecycleActions struct {
 	// - bash
 	// - -c
 	// - |
-	//    ADDRESS=$(KB_MEMBER_ADDRESSES%%,*)
-	//    HOST=$(echo $ADDRESS | cut -d ':' -f 1)
-	//    PORT=$(echo $ADDRESS | cut -d ':' -f 2)
-	//    CLIENT="mysql -u $KB_SERVICE_USER  -p$KB_SERVICE_PASSWORD -P $PORT -h $HOST -e"
-	// 	  $CLIENT "ALTER SYSTEM DELETE SERVER '$KB_LEAVE_MEMBER_POD_IP:$KB_SERVICE_PORT' ZONE 'zone1'"
+	//    CLIENT="mysql -u $SERVICE_USER -p$SERVICE_PASSWORD -P $SERVICE_PORT -h $SERVICE_HOST -e"
+	// 	  $CLIENT "ALTER SYSTEM DELETE SERVER '$KB_POD_FQDN:$SERVICE_PORT' ZONE 'zone1'"
 	// ```
 	//
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	MemberLeave *LifecycleActionHandler `json:"memberLeave,omitempty"`
+	MemberLeave *Action `json:"memberLeave,omitempty"`
 
 	// Defines the procedure to switch a replica into the read-only state.
 	//
@@ -1243,9 +1064,6 @@ type ComponentLifecycleActions struct {
 	// The container executing this action has access to following environment variables:
 	//
 	// - KB_POD_FQDN: The FQDN of the replica pod whose role is being checked.
-	// - KB_SERVICE_PORT: The port used by the database service.
-	// - KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.
-	// - KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.
 	//
 	// Expected action output:
 	// - On Failure: An error message, if applicable, indicating why the action failed.
@@ -1253,7 +1071,7 @@ type ComponentLifecycleActions struct {
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	Readonly *LifecycleActionHandler `json:"readonly,omitempty"`
+	Readonly *Action `json:"readonly,omitempty"`
 
 	// Defines the procedure to transition a replica from the read-only state back to the read-write state.
 	//
@@ -1265,9 +1083,6 @@ type ComponentLifecycleActions struct {
 	// The container executing this action has access to following environment variables:
 	//
 	// - KB_POD_FQDN: The FQDN of the replica pod whose role is being checked.
-	// - KB_SERVICE_PORT: The port used by the database service.
-	// - KB_SERVICE_USER: The username with the necessary permissions to interact with the database service.
-	// - KB_SERVICE_PASSWORD: The corresponding password for KB_SERVICE_USER to authenticate with the database service.
 	//
 	// Expected action output:
 	// - On Failure: An error message, if applicable, indicating why the action failed.
@@ -1275,7 +1090,7 @@ type ComponentLifecycleActions struct {
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	Readwrite *LifecycleActionHandler `json:"readwrite,omitempty"`
+	Readwrite *Action `json:"readwrite,omitempty"`
 
 	// Defines the procedure for exporting the data from a replica.
 	//
@@ -1294,7 +1109,7 @@ type ComponentLifecycleActions struct {
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	DataDump *LifecycleActionHandler `json:"dataDump,omitempty"`
+	DataDump *Action `json:"dataDump,omitempty"`
 
 	// Defines the procedure for importing data into a replica.
 	//
@@ -1312,7 +1127,7 @@ type ComponentLifecycleActions struct {
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	DataLoad *LifecycleActionHandler `json:"dataLoad,omitempty"`
+	DataLoad *Action `json:"dataLoad,omitempty"`
 
 	// Defines the procedure that update a replica with new configuration.
 	//
@@ -1321,7 +1136,7 @@ type ComponentLifecycleActions struct {
 	// This Action is reserved for future versions.
 	//
 	// +optional
-	Reconfigure *LifecycleActionHandler `json:"reconfigure,omitempty"`
+	Reconfigure *Action `json:"reconfigure,omitempty"`
 
 	// Defines the procedure to generate a new database account.
 	//
@@ -1329,42 +1144,14 @@ type ComponentLifecycleActions struct {
 	// This action is designed to create system accounts that are utilized for replication, monitoring, backup,
 	// and other administrative tasks.
 	//
+	// The container executing this action has access to following variables:
+	//
+	// - KB_ACCOUNT_NAME: The name of the system account to be created.
+	// - KB_ACCOUNT_PASSWORD: The password for the system account.  // TODO: how to pass the password securely?
+	// - KB_ACCOUNT_STATEMENT: The statement used to create the system account.
+	//
 	// Note: This field is immutable once it has been set.
 	//
 	// +optional
-	AccountProvision *LifecycleActionHandler `json:"accountProvision,omitempty"`
-}
-
-type ComponentSwitchover struct {
-	// Represents the switchover process for a specified candidate primary or leader instance.
-	// Note that only Action.Exec is currently supported, while Action.HTTP is not.
-	//
-	// +optional
-	WithCandidate *Action `json:"withCandidate,omitempty"`
-
-	// Represents a switchover process that does not involve a specific candidate primary or leader instance.
-	// As with the previous field, only Action.Exec is currently supported, not Action.HTTP.
-	//
-	// +optional
-	WithoutCandidate *Action `json:"withoutCandidate,omitempty"`
-
-	// Used to define the selectors for the scriptSpecs that need to be referenced.
-	// If this field is set, the scripts defined under the 'scripts' field can be invoked or referenced within an Action.
-	//
-	// This field is deprecated from v0.9.
-	// This field is maintained for backward compatibility and its use is discouraged.
-	// Existing usage should be updated to the current preferred approach to avoid compatibility issues in future releases.
-	//
-	// +kubebuilder:deprecatedversion:warning="This field is deprecated from KB 0.9.0"
-	// +optional
-	ScriptSpecSelectors []ScriptSpecSelector `json:"scriptSpecSelectors,omitempty"`
-}
-
-type ScriptSpecSelector struct {
-	// Represents the name of the ScriptSpec referent.
-	//
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MaxLength=63
-	// +kubebuilder:validation:Pattern:=`^[a-z0-9]([a-z0-9\.\-]*[a-z0-9])?$`
-	Name string `json:"name"`
+	AccountProvision *Action `json:"accountProvision,omitempty"`
 }

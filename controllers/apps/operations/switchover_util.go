@@ -36,7 +36,7 @@ import (
 	"github.com/apecloud/kubeblocks/pkg/constant"
 	"github.com/apecloud/kubeblocks/pkg/controller/component"
 	"github.com/apecloud/kubeblocks/pkg/controller/instanceset"
-	"github.com/apecloud/kubeblocks/pkg/controller/job"
+	jobutil "github.com/apecloud/kubeblocks/pkg/controller/job"
 	intctrlutil "github.com/apecloud/kubeblocks/pkg/controllerutil"
 )
 
@@ -111,14 +111,14 @@ func createSwitchoverJob(reqCtx intctrlutil.RequestCtx,
 	if !exists {
 		// check the previous generation switchoverJob whether exist
 		ml := getSwitchoverCmdJobLabel(cluster.Name, synthesizedComp.Name)
-		previousJobs, err := job.GetJobWithLabels(reqCtx.Ctx, cli, cluster, ml)
+		previousJobs, err := jobutil.GetJobWithLabels(reqCtx.Ctx, cli, cluster, ml)
 		if err != nil {
 			return err
 		}
 		if len(previousJobs) > 0 {
 			// delete the previous generation switchoverJob
 			reqCtx.Log.V(1).Info("delete previous generation switchoverJob", "job", previousJobs[0].Name)
-			if err := job.CleanJobWithLabels(reqCtx.Ctx, cli, cluster, ml); err != nil {
+			if err := jobutil.CleanJobWithLabels(reqCtx.Ctx, cli, cluster, ml); err != nil {
 				return err
 			}
 		}
@@ -187,63 +187,10 @@ func renderSwitchoverCmdJob(ctx context.Context,
 		return nil, errors.New("serviceable and writable pod not found")
 	}
 
-	renderJobPodVolumes := func(scriptSpecSelectors []appsv1alpha1.ScriptSpecSelector) ([]corev1.Volume, []corev1.VolumeMount) {
-		volumes := make([]corev1.Volume, 0)
-		volumeMounts := make([]corev1.VolumeMount, 0)
-
-		// find current pod's volume which mapped to configMapRefs
-		findVolumes := func(tplSpec appsv1alpha1.ComponentTemplateSpec, scriptSpecSelector appsv1alpha1.ScriptSpecSelector) {
-			if tplSpec.Name != scriptSpecSelector.Name {
-				return
-			}
-			for _, podVolume := range pod.Spec.Volumes {
-				if podVolume.Name == tplSpec.VolumeName {
-					volumes = append(volumes, podVolume)
-					break
-				}
-			}
-		}
-
-		// filter out the corresponding script configMap volumes from the volumes of the current leader pod based on the scriptSpecSelectors defined by the user.
-		for _, scriptSpecSelector := range scriptSpecSelectors {
-			for _, scriptSpec := range synthesizedComp.ScriptTemplates {
-				findVolumes(scriptSpec, scriptSpecSelector)
-			}
-		}
-
-		// find current pod's volumeMounts which mapped to volumes
-		for _, volume := range volumes {
-			for _, volumeMount := range pod.Spec.Containers[0].VolumeMounts {
-				if volumeMount.Name == volume.Name {
-					volumeMounts = append(volumeMounts, volumeMount)
-					break
-				}
-			}
-		}
-
-		return volumes, volumeMounts
-	}
-
-	renderJob := func(switchoverSpec *appsv1alpha1.ComponentSwitchover, switchoverEnvs []corev1.EnvVar) (*batchv1.Job, error) {
-		var (
-			cmdExecutorConfig   *appsv1alpha1.Action
-			scriptSpecSelectors []appsv1alpha1.ScriptSpecSelector
-		)
-		switch switchover.InstanceName {
-		case KBSwitchoverCandidateInstanceForAnyPod:
-			if switchoverSpec.WithoutCandidate != nil && switchoverSpec.WithoutCandidate.Exec != nil {
-				cmdExecutorConfig = switchoverSpec.WithoutCandidate
-			}
-		default:
-			if switchoverSpec.WithCandidate != nil && switchoverSpec.WithCandidate.Exec != nil {
-				cmdExecutorConfig = switchoverSpec.WithCandidate
-			}
-		}
-		scriptSpecSelectors = append(scriptSpecSelectors, switchoverSpec.ScriptSpecSelectors...)
-		if cmdExecutorConfig == nil {
+	renderJob := func(switchoverSpec *appsv1alpha1.Action, switchoverEnvs []corev1.EnvVar) (*batchv1.Job, error) {
+		if switchoverSpec == nil {
 			return nil, errors.New("switchover exec action not found")
 		}
-		volumes, volumeMounts := renderJobPodVolumes(scriptSpecSelectors)
 
 		// jobName named with generation to distinguish different switchover jobs.
 		jobName := genSwitchoverJobName(cluster.Name, synthesizedComp.Name, cluster.Generation)
@@ -260,17 +207,15 @@ func renderSwitchoverCmdJob(ctx context.Context,
 						Name:      jobName,
 					},
 					Spec: corev1.PodSpec{
-						Volumes:       volumes,
 						RestartPolicy: corev1.RestartPolicyNever,
 						Containers: []corev1.Container{
 							{
 								Name:            KBSwitchoverJobContainerName,
-								Image:           cmdExecutorConfig.Exec.Image,
+								Image:           switchoverSpec.Exec.Image,
 								ImagePullPolicy: corev1.PullIfNotPresent,
-								Command:         cmdExecutorConfig.Exec.Command,
-								Args:            cmdExecutorConfig.Exec.Args,
+								Command:         switchoverSpec.Exec.Command,
+								Args:            switchoverSpec.Exec.Args,
 								Env:             switchoverEnvs,
-								VolumeMounts:    volumeMounts,
 							},
 						},
 					},
@@ -280,8 +225,8 @@ func renderSwitchoverCmdJob(ctx context.Context,
 		for i := range job.Spec.Template.Spec.Containers {
 			intctrlutil.InjectZeroResourcesLimitsIfEmpty(&job.Spec.Template.Spec.Containers[i])
 		}
-		if len(cluster.Spec.Tolerations) > 0 {
-			job.Spec.Template.Spec.Tolerations = cluster.Spec.Tolerations
+		if err := jobutil.BuildJobTolerations(cluster, job); err != nil {
+			return nil, err
 		}
 		return job, nil
 	}
@@ -343,25 +288,13 @@ func buildSwitchoverEnvs(ctx context.Context,
 	synthesizeComp *component.SynthesizedComponent,
 	switchover *appsv1alpha1.Switchover) ([]corev1.EnvVar, error) {
 	if synthesizeComp == nil || synthesizeComp.LifecycleActions == nil ||
-		synthesizeComp.LifecycleActions.Switchover == nil || switchover == nil {
+		synthesizeComp.LifecycleActions.Switchover == nil ||
+		synthesizeComp.LifecycleActions.Switchover.Exec == nil || switchover == nil {
 		return nil, errors.New("switchover spec not found")
 	}
 
-	if synthesizeComp.LifecycleActions.Switchover.WithCandidate == nil && synthesizeComp.LifecycleActions.Switchover.WithoutCandidate == nil {
-		return nil, errors.New("switchover spec withCandidate and withoutCandidate can't be nil at the same time")
-	}
-
 	var switchoverEnvs []corev1.EnvVar
-	switch switchover.InstanceName {
-	case KBSwitchoverCandidateInstanceForAnyPod:
-		if synthesizeComp.LifecycleActions.Switchover.WithoutCandidate != nil {
-			switchoverEnvs = append(switchoverEnvs, synthesizeComp.LifecycleActions.Switchover.WithoutCandidate.Exec.Env...)
-		}
-	default:
-		if synthesizeComp.LifecycleActions.Switchover.WithCandidate != nil {
-			switchoverEnvs = append(switchoverEnvs, synthesizeComp.LifecycleActions.Switchover.WithCandidate.Exec.Env...)
-		}
-	}
+	switchoverEnvs = append(switchoverEnvs, synthesizeComp.LifecycleActions.Switchover.Exec.Env...)
 
 	// inject the old primary info into the environment variable
 	workloadEnvs, err := buildSwitchoverWorkloadEnvs(ctx, cli, synthesizeComp)

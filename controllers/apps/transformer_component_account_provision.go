@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package apps
 
 import (
-	"fmt"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -33,11 +32,9 @@ import (
 	"github.com/apecloud/kubeblocks/pkg/common"
 	"github.com/apecloud/kubeblocks/pkg/constant"
 	"github.com/apecloud/kubeblocks/pkg/controller/component"
+	"github.com/apecloud/kubeblocks/pkg/controller/component/lifecycle"
 	"github.com/apecloud/kubeblocks/pkg/controller/graph"
 	"github.com/apecloud/kubeblocks/pkg/controller/model"
-	"github.com/apecloud/kubeblocks/pkg/controllerutil"
-	lorry "github.com/apecloud/kubeblocks/pkg/lorry/client"
-	lorryModel "github.com/apecloud/kubeblocks/pkg/lorry/engines/models"
 )
 
 const (
@@ -79,22 +76,14 @@ func (t *componentAccountProvisionTransformer) Transform(ctx graph.TransformCont
 		return nil
 	}
 
-	// TODO: support custom handler for account
-	// TODO: build lorry client if accountProvision is built-in
-	lorryCli, err := t.buildLorryClient(transCtx)
+	lfa, err := t.lifecycleAction(transCtx)
 	if err != nil {
 		return err
-	}
-	if controllerutil.IsNil(lorryCli) {
-		return nil
 	}
 	for _, account := range transCtx.SynthesizeComponent.SystemAccounts {
 		// The secret of initAccount should be rendered into the config file,
 		// or injected into the container through specific account&password environment variables name supported by the engine.
 		// When the engine starts up, it will automatically load and create this account.
-		// There's no need for lorry to create it again.
-		//
-		// InitAccount is necessary because lorry itself requires an account to connect in the first place.
 		if account.InitAccount {
 			continue
 		}
@@ -104,7 +93,7 @@ func (t *componentAccountProvisionTransformer) Transform(ctx graph.TransformCont
 		if transCtx.SynthesizeComponent.Annotations[constant.RestoreFromBackupAnnotationKey] == "" {
 			// TODO: restore account secret from backup.
 			// provision account when the component is not recovered from backup
-			if err = t.provisionAccount(transCtx, cond, lorryCli, account); err != nil {
+			if err = t.provisionAccount(transCtx, cond, lfa, account); err != nil {
 				t.markProvisionAsFailed(transCtx, &cond, err)
 				return err
 			}
@@ -186,37 +175,22 @@ func (t *componentAccountProvisionTransformer) markAccountProvisioned(cond *meta
 	cond.Message = strings.Join(accounts, ",")
 }
 
-func (t *componentAccountProvisionTransformer) buildLorryClient(transCtx *componentTransformContext) (lorry.Client, error) {
+func (t *componentAccountProvisionTransformer) lifecycleAction(transCtx *componentTransformContext) (lifecycle.Lifecycle, error) {
 	synthesizedComp := transCtx.SynthesizeComponent
-
-	roleName := ""
-	for _, role := range synthesizedComp.Roles {
-		if role.Serviceable && role.Writable {
-			roleName = role.Name
-		}
-	}
-	if roleName == "" {
-		return nil, nil
-	}
-
-	pods, err := component.ListOwnedPodsWithRole(transCtx.Context, transCtx.Client,
-		synthesizedComp.Namespace, synthesizedComp.ClusterName, synthesizedComp.Name, roleName)
+	pods, err := component.ListOwnedPods(transCtx.Context, transCtx.Client,
+		synthesizedComp.Namespace, synthesizedComp.ClusterName, synthesizedComp.Name)
 	if err != nil {
 		return nil, err
 	}
-	if len(pods) == 0 {
-		return nil, fmt.Errorf("unable to find appropriate pods to create accounts")
-	}
-
-	lorryCli, err := lorry.NewClient(*pods[0])
+	lfa, err := lifecycle.New(transCtx.SynthesizeComponent, nil, pods...)
 	if err != nil {
 		return nil, err
 	}
-	return lorryCli, nil
+	return lfa, nil
 }
 
 func (t *componentAccountProvisionTransformer) provisionAccount(transCtx *componentTransformContext,
-	_ metav1.Condition, lorryCli lorry.Client, account appsv1alpha1.SystemAccount) error {
+	_ metav1.Condition, lfa lifecycle.Lifecycle, account appsv1alpha1.SystemAccount) error {
 
 	synthesizedComp := transCtx.SynthesizeComponent
 	secret, err := t.getAccountSecret(transCtx, synthesizedComp, account)
@@ -229,15 +203,8 @@ func (t *componentAccountProvisionTransformer) provisionAccount(transCtx *compon
 		return nil
 	}
 
-	userInfo, err := lorryCli.DescribeUser(transCtx, string(username))
-	if err == nil && len(userInfo) != 0 {
-		return nil
-	}
-
-	namedVars := getEnvReplacementMapForAccount(string(username), string(password))
-	stmt := component.ReplaceNamedVars(namedVars, account.Statement, -1, true)
-	// TODO: re-define the role
-	return lorryCli.CreateUser(transCtx.Context, string(username), string(password), string(lorryModel.SuperUserRole), stmt)
+	err = lfa.AccountProvision(transCtx.Context, transCtx.Client, nil, account.Statement, string(username), string(password))
+	return lifecycle.IgnoreNotDefined(err)
 }
 
 func (t *componentAccountProvisionTransformer) getAccountSecret(ctx graph.TransformContext,
@@ -251,11 +218,4 @@ func (t *componentAccountProvisionTransformer) getAccountSecret(ctx graph.Transf
 		return nil, err
 	}
 	return secret, nil
-}
-
-func getEnvReplacementMapForAccount(name, passwd string) map[string]string {
-	return map[string]string{
-		"$(USERNAME)": name,
-		"$(PASSWD)":   passwd,
-	}
 }

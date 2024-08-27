@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package apps
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -41,8 +43,7 @@ const (
 	ApeCloudMySQLImage        = "docker.io/apecloud/apecloud-mysql-server:latest"
 	DefaultMySQLContainerName = "mysql"
 
-	NginxImage                = "nginx"
-	DefaultNginxContainerName = "nginx"
+	NginxImage = "nginx"
 
 	DefaultConfigSpecName          = "config-cm"
 	DefaultConfigSpecTplRef        = "env-from-config-tpl"
@@ -54,9 +55,12 @@ const (
 )
 
 var (
-	defaultBuiltinHandler         = appsv1alpha1.MySQLBuiltinActionHandler
-	defaultLifecycleActionHandler = &appsv1alpha1.LifecycleActionHandler{
-		BuiltinHandler: &defaultBuiltinHandler,
+	NewLifecycleAction = func(name string) *appsv1alpha1.Action {
+		return &appsv1alpha1.Action{
+			Exec: &appsv1alpha1.ExecAction{
+				Command: []string{"/bin/sh", "-c", fmt.Sprintf("echo %s", name)},
+			},
+		}
 	}
 
 	zeroResRequirements = corev1.ResourceRequirements{
@@ -228,24 +232,21 @@ var (
 			ScrapeScheme: appsv1alpha1.HTTPProtocol,
 		},
 		LifecycleActions: &appsv1alpha1.ComponentLifecycleActions{
-			PostProvision: defaultLifecycleActionHandler,
-			PreTerminate:  defaultLifecycleActionHandler,
+			PostProvision: nil,
+			PreTerminate:  nil,
 			RoleProbe: &appsv1alpha1.Probe{
-				BuiltinHandler: defaultLifecycleActionHandler.BuiltinHandler,
-				Action: appsv1alpha1.Action{
-					TimeoutSeconds: 5,
-				},
+				Action:        *NewLifecycleAction("role-probe"),
 				PeriodSeconds: 1,
 			},
 			Switchover:       nil,
-			MemberJoin:       defaultLifecycleActionHandler,
-			MemberLeave:      defaultLifecycleActionHandler,
-			Readonly:         defaultLifecycleActionHandler,
-			Readwrite:        defaultLifecycleActionHandler,
-			DataDump:         defaultLifecycleActionHandler,
-			DataLoad:         defaultLifecycleActionHandler,
-			Reconfigure:      defaultLifecycleActionHandler,
-			AccountProvision: defaultLifecycleActionHandler,
+			MemberJoin:       nil,
+			MemberLeave:      NewLifecycleAction("member-leave"),
+			Readonly:         nil,
+			Readwrite:        nil,
+			DataDump:         nil,
+			DataLoad:         nil,
+			Reconfigure:      nil,
+			AccountProvision: NewLifecycleAction("account-provision"),
 		},
 	}
 
